@@ -1,0 +1,455 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model admin_logs {
+  id          Int       @id @default(autoincrement())
+  admin_id    Int?
+  action      String?
+  target_type String?   @db.VarChar
+  target_id   Int?
+  timestamp   DateTime? @db.Timestamp(6)
+  notes       String?
+  users       users?    @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model brands {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique @db.VarChar
+  slug        String     @unique @db.VarChar
+  description String?
+  image_url   String?    @db.VarChar
+  website_url String?    @db.VarChar
+  is_active   Boolean?   @default(true)
+  created_at  DateTime?  @default(now()) @db.Timestamp(6)
+  products    products[]
+}
+
+model buyer_dashboard_metrics {
+  id                Int       @id @default(autoincrement())
+  user_id           Int?
+  total_spent       Float?
+  total_orders      Int?
+  favorite_category String?   @db.VarChar
+  updated_at        DateTime? @db.Timestamp(6)
+  users             users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model buyer_invoice_info {
+  id               Int     @id @default(autoincrement())
+  user_id          Int?
+  nombre_fiscal    String? @db.VarChar
+  cedula_fiscal    String? @db.VarChar
+  direccion_fiscal String?
+  telefono         String? @db.VarChar
+  email            String? @db.VarChar
+  users            users?  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cart_items {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  product_id Int
+  quantity   Int       @default(1)
+  added_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  products   products  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model categories {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar
+  slug        String    @unique @db.VarChar
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model conversations {
+  id         Int        @id @default(autoincrement())
+  buyer_id   Int?
+  seller_id  Int?
+  started_at DateTime?  @db.Timestamp(6)
+  users      users?     @relation(fields: [buyer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sellers    sellers?   @relation(fields: [seller_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  messages   messages[]
+}
+
+model coupon_usages {
+  id        Int       @id @default(autoincrement())
+  coupon_id Int?
+  user_id   Int?
+  order_id  Int?
+  used_at   DateTime? @db.Timestamp(6)
+  coupons   coupons?  @relation(fields: [coupon_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders    orders?   @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users     users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model coupons {
+  id                   Int             @id @default(autoincrement())
+  code                 String?         @unique @db.VarChar
+  discount_type        String?         @db.VarChar
+  value                Float?
+  valid_from           DateTime?       @db.Timestamp(6)
+  valid_to             DateTime?       @db.Timestamp(6)
+  usage_limit          Int?
+  applies_to_seller_id Int?
+  coupon_usages        coupon_usages[]
+  sellers              sellers?        @relation(fields: [applies_to_seller_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model fe_subscriptions {
+  id                  Int       @id @default(autoincrement())
+  seller_id           Int?
+  start_date          DateTime? @db.Timestamp(6)
+  end_date            DateTime? @db.Timestamp(6)
+  is_active           Boolean?
+  razon_social        String?   @db.VarChar
+  cedula              String?   @db.VarChar
+  tipo_contribuyente  String?   @db.VarChar
+  actividad_economica String?   @db.VarChar
+  correo_fiscal       String?   @db.VarChar
+  clave_criptografica String?
+  pin_firma           String?
+  sellers             sellers?  @relation(fields: [seller_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model messages {
+  id              Int            @id @default(autoincrement())
+  conversation_id Int?
+  sender_id       Int?
+  content         String?
+  sent_at         DateTime?      @db.Timestamp(6)
+  is_read         Boolean?
+  conversations   conversations? @relation(fields: [conversation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users           users?         @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model order_gifts {
+  id              Int          @id @default(autoincrement())
+  order_item_id   Int?
+  is_gift         Boolean?
+  gift_message    String?
+  gift_wrap       Boolean?
+  additional_cost Float?
+  order_items     order_items? @relation(fields: [order_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model order_items {
+  id          Int           @id @default(autoincrement())
+  order_id    Int?
+  product_id  Int?
+  quantity    Int?
+  unit_price  Float?
+  order_gifts order_gifts[]
+  orders      orders?       @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products    products?     @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  returns     returns[]
+}
+
+model order_notes {
+  id       Int     @id @default(autoincrement())
+  order_id Int?
+  note     String?
+  orders   orders? @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model order_shipping {
+  id                Int       @id @default(autoincrement())
+  order_id          Int?
+  tracking_number   String?   @db.VarChar
+  shipping_provider String?   @db.VarChar
+  status            String?   @db.VarChar
+  updated_at        DateTime? @db.Timestamp(6)
+  orders            orders?   @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model orders {
+  id             Int              @id @default(autoincrement())
+  buyer_id       Int?
+  total          Float?
+  status         String?          @db.VarChar
+  created_at     DateTime?        @db.Timestamp(6)
+  coupon_usages  coupon_usages[]
+  order_items    order_items[]
+  order_notes    order_notes[]
+  order_shipping order_shipping[]
+  users          users?           @relation(fields: [buyer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments       payments[]
+}
+
+model payments {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  order_id   Int?
+  amount     Float?
+  method     String?   @db.VarChar
+  status     String?   @db.VarChar
+  created_at DateTime? @db.Timestamp(6)
+  orders     orders?   @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model plan_subscriptions {
+  id              Int              @id @default(autoincrement())
+  seller_id       Int?
+  plan_id         Int?
+  start_date      DateTime?        @db.Timestamp(6)
+  end_date        DateTime?        @db.Timestamp(6)
+  is_active       Boolean?
+  promotion_plans promotion_plans? @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sellers         sellers?         @relation(fields: [seller_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_media {
+  id               Int               @id @default(autoincrement())
+  product_id       Int
+  variant_id       Int?
+  file_url         String
+  file_name        String?           @db.VarChar
+  file_type        String?           @db.VarChar
+  file_size        Int?
+  mime_type        String?           @db.VarChar
+  is_primary       Boolean?          @default(false)
+  display_order    Int?              @default(0)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  products         products          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_variants product_variants? @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_recommendations {
+  id                                                                Int       @id @default(autoincrement())
+  product_id                                                        Int?
+  recommended_product_id                                            Int?
+  products_product_recommendations_product_idToproducts             products? @relation("product_recommendations_product_idToproducts", fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products_product_recommendations_recommended_product_idToproducts products? @relation("product_recommendations_recommended_product_idToproducts", fields: [recommended_product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_reports {
+  id          Int       @id @default(autoincrement())
+  product_id  Int?
+  user_id     Int?
+  reason      String?
+  status      String?   @db.VarChar
+  reported_at DateTime? @db.Timestamp(6)
+  products    products? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_reviews {
+  id         Int       @id @default(autoincrement())
+  product_id Int?
+  user_id    Int?
+  rating     Int?
+  comment    String?
+  created_at DateTime? @db.Timestamp(6)
+  products   products? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_sales {
+  id         Int       @id @default(autoincrement())
+  product_id Int?
+  sale_date  DateTime? @db.Timestamp(6)
+  quantity   Int?
+  products   products? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_variant_values {
+  id               Int               @id @default(autoincrement())
+  variant_id       Int?
+  value_id         Int?
+  variant_values   variant_values?   @relation(fields: [value_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_variants product_variants? @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_variants {
+  id                     Int                      @id @default(autoincrement())
+  product_id             Int?
+  sku                    String?                  @db.VarChar
+  price                  Float?
+  stock_quantity         Int?
+  is_active              Boolean?
+  attributes             Json?                    @default("{}")
+  product_media          product_media[]
+  product_variant_values product_variant_values[]
+  products               products?                @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_views {
+  id         Int       @id @default(autoincrement())
+  product_id Int?
+  user_id    Int?
+  viewed_at  DateTime? @db.Timestamp(6)
+  products   products? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model products {
+  id                                                                               Int                       @id @default(autoincrement())
+  seller_id                                                                        Int?
+  name                                                                             String?                   @db.VarChar
+  description                                                                      String?
+  price                                                                            Float?
+  category                                                                         String?                   @db.VarChar
+  is_active                                                                        Boolean?
+  is_promoted                                                                      Boolean?
+  stock_quantity                                                                   Int?
+  created_at                                                                       DateTime?                 @db.Timestamp(6)
+  brand_id                                                                         Int?
+  currency                                                                         String?                   @default("CRC") @db.VarChar
+  has_variants                                                                     Boolean?                  @default(false)
+  brand_type                                                                       String?                   @db.VarChar
+  custom_brand_name                                                                String?                   @db.VarChar
+  cart_items                                                                       cart_items[]
+  order_items                                                                      order_items[]
+  product_media                                                                    product_media[]
+  product_recommendations_product_recommendations_product_idToproducts             product_recommendations[] @relation("product_recommendations_product_idToproducts")
+  product_recommendations_product_recommendations_recommended_product_idToproducts product_recommendations[] @relation("product_recommendations_recommended_product_idToproducts")
+  product_reports                                                                  product_reports[]
+  product_reviews                                                                  product_reviews[]
+  product_sales                                                                    product_sales[]
+  product_variants                                                                 product_variants[]
+  product_views                                                                    product_views[]
+  brands                                                                           brands?                   @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sellers                                                                          sellers?                  @relation(fields: [seller_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  user_notifications                                                               user_notifications[]
+  wishlists                                                                        wishlists[]
+}
+
+model promotion_plans {
+  id                  Int                  @id @default(autoincrement())
+  name                String?              @db.VarChar
+  price_per_day       Float?
+  duration_days       Int?
+  discount_percentage Float?
+  plan_subscriptions  plan_subscriptions[]
+}
+
+model returns {
+  id            Int          @id @default(autoincrement())
+  order_item_id Int?
+  user_id       Int?
+  reason        String?
+  status        String?      @db.VarChar
+  requested_at  DateTime?    @db.Timestamp(6)
+  resolved_at   DateTime?    @db.Timestamp(6)
+  order_items   order_items? @relation(fields: [order_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         users?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model seller_followers {
+  id          Int       @id @default(autoincrement())
+  seller_id   Int?
+  follower_id Int?
+  followed_at DateTime? @db.Timestamp(6)
+  users       users?    @relation(fields: [follower_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sellers     sellers?  @relation(fields: [seller_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model sellers {
+  user_id             Int                   @id
+  seller_type         String?               @db.VarChar
+  profile_picture_url String?               @db.VarChar
+  landing_description String?
+  social_links        String?
+  fe_active           Boolean?
+  conversations       conversations[]
+  coupons             coupons[]
+  fe_subscriptions    fe_subscriptions[]
+  plan_subscriptions  plan_subscriptions[]
+  products            products[]
+  seller_followers    seller_followers[]
+  users               users                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stats_subscriptions stats_subscriptions[]
+}
+
+model stats_subscriptions {
+  id         Int       @id @default(autoincrement())
+  seller_id  Int?
+  start_date DateTime? @db.Timestamp(6)
+  end_date   DateTime? @db.Timestamp(6)
+  is_active  Boolean?
+  sellers    sellers?  @relation(fields: [seller_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_notifications {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  product_id Int?
+  type       String?   @db.VarChar
+  status     String?   @db.VarChar
+  created_at DateTime? @db.Timestamp(6)
+  products   products? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_sessions {
+  id          Int       @id @default(autoincrement())
+  user_id     Int?
+  device_info String?
+  ip_address  String?   @db.VarChar
+  created_at  DateTime? @db.Timestamp(6)
+  last_active DateTime? @db.Timestamp(6)
+  is_revoked  Boolean?
+  users       users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  id                      Int                       @id @default(autoincrement())
+  name                    String?                   @db.VarChar
+  email                   String                    @unique @db.VarChar
+  password_hash           String?                   @db.VarChar
+  role                    String?                   @db.VarChar
+  created_at              DateTime?                 @db.Timestamp(6)
+  is_verified             Boolean?
+  admin_logs              admin_logs[]
+  buyer_dashboard_metrics buyer_dashboard_metrics[]
+  buyer_invoice_info      buyer_invoice_info[]
+  cart_items              cart_items[]
+  conversations           conversations[]
+  coupon_usages           coupon_usages[]
+  messages                messages[]
+  orders                  orders[]
+  payments                payments[]
+  product_reports         product_reports[]
+  product_reviews         product_reviews[]
+  product_views           product_views[]
+  returns                 returns[]
+  seller_followers        seller_followers[]
+  sellers                 sellers?
+  user_notifications      user_notifications[]
+  user_sessions           user_sessions[]
+  wishlists               wishlists[]
+}
+
+model variant_options {
+  id             Int              @id @default(autoincrement())
+  name           String?          @db.VarChar
+  variant_values variant_values[]
+}
+
+model variant_values {
+  id                     Int                      @id @default(autoincrement())
+  option_id              Int?
+  value                  String?                  @db.VarChar
+  product_variant_values product_variant_values[]
+  variant_options        variant_options?         @relation(fields: [option_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model wishlists {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  product_id Int?
+  created_at DateTime? @db.Timestamp(6)
+  products   products? @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
