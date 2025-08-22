@@ -94,3 +94,7 @@ Reemplazar el valor del token con el correspondiente.
 ## Autor
 
 Proyecto desarrollado por [Tu nombre o alias].
+
+## AUTO Documentation
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CrytpoNacho/Ticommerce)
+
